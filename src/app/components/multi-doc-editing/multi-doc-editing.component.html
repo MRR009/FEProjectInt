@@ -1,0 +1,63 @@
+
+<div class=" mt-5 head-styl">
+    <h1 class="title">
+        Edit Document Attributes
+    </h1>
+<div class="container-fluid form-decor">
+ <form class="row d-flex flex-row p-3" (ngSubmit)="onSubmit()"  [formGroup]="documentForm">
+       
+         <div class="inp-style col-4">
+            <label for="">Country</label>
+            <select class="form-control" formControlName="country" >
+                <option *ngFor="let country of countryList">
+                  {{ country.countryname }}
+                </option>
+              </select>
+        </div>
+
+        <div class="inp-style boxing-decor col-4">
+            <label for="">Section</label>
+            <select class="form-control" formControlName="section" >
+                <option *ngFor="let section of sectionList">
+                  {{ section.section }}
+                </option>
+              </select>
+        </div>
+
+        <div class="inp-style col-4 boxing-decor">
+            <label for="">Resource Type</label>
+            <select class="form-control" formControlName="resourceType" >
+                <option *ngFor="let resource of resourceList">
+                  {{ resource }}
+                </option>
+              </select>
+        </div>
+        <br>
+        <div class="inp-style col-4 boxing-decor">
+            <label for="">Category</label>
+            <input class="form-control"  formControlName="category">
+        </div>
+
+        <div class="inp-style col-4 boxing-decor">
+            <label for="">Year</label>
+            <input class="form-control"  formControlName="year">
+        </div>
+
+        <div class="inp-style col-4 boxing-decor">
+            <label for="">Review Status</label>
+            <select class="form-control"  formControlName="revisionStatus" >
+                <option *ngFor="let status of reviewStatusList">
+                  {{ status}}
+                </option>
+              </select>
+        </div>
+
+        <div class="d-flex flex-row justify-content-end">
+            <button type="submit" class="btn btn-primary m-2">Save</button>
+            <button mat-button [mat-dialog-close]="true" class="btn btn-primary m-2">back</button>
+        </div>
+    
+  
+</form>
+</div>
+</div>

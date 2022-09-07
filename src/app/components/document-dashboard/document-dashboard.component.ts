@@ -1,6 +1,6 @@
 import { SelectionModel } from '@angular/cdk/collections';
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { AfterViewInit, Component, HostListener, OnInit, ViewChild } from '@angular/core';
+
 import { saveAs as fileSaverSave } from 'file-saver';
 
 import { MatPaginator } from '@angular/material/paginator';
@@ -14,15 +14,23 @@ import { CreateDocumentComponent } from '../create-document/create-document.comp
 import { EditSelectedDocComponent } from '../edit-selected-doc/edit-selected-doc.component';
 import { MatSelect } from '@angular/material/select';
 import { MatCheckboxChange } from '@angular/material/checkbox';
+import { FormControl } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { addMultipleDocIds, removeMultipleDocIds } from 'src/app/store/document-store/document.action';
 import { Observable } from 'rxjs';
 import { selectedDocIds } from 'src/app/store/document-store/document.selector';
 import { metaReducerLocalStorage } from 'src/app/store/document-store/document.reducer';
+import { UserDetails } from 'src/app/model/userDetails';
+import { userState } from 'src/app/store/dealer-store/selector';
+import { MultiDocEditingComponent } from '../multi-doc-editing/multi-doc-editing.component';
+import { MultipleDocs } from 'src/app/model/multiDocInterface';
 //import * as _ from 'lodash'
 
 export interface DataExport{
   data:any;
+}
+export interface DataExport2{
+  data2:number[];
 }
 
 @Component({
@@ -35,12 +43,14 @@ export class DocumentDashboardComponent implements OnInit, AfterViewInit {
   @ViewChild(MatSort) sort !: MatSort;
   @ViewChild(MatPaginator) paginator !: MatPaginator;
 
+
   countriesList : any[] = [];
 
   multipleSelectedDocsIds : number[] = [];
 
-  multipleDocEntries$ !: Observable<Number[]>
-  isChecked :boolean = false;
+  multipleDocEntries$ !: Observable<MultipleDocs[]>
+  isChecked !:number;
+  selectMultiDocs = new MultipleDocs();
 
   selectedDoc!:Document;
   docUrl!: string;
@@ -80,8 +90,10 @@ export class DocumentDashboardComponent implements OnInit, AfterViewInit {
   constructor(private documentservice: DocumentService,public dialog: MatDialog, private store: Store) {
     this.getAllDocuments()
     this.dataSource.filterPredicate = this.createFilter();
+
     //store.select(selectedDocIds).subscribe(data => {console.log(data)})
     //this.multipleDocEntries$ = store.select(selectedDocIds);
+   
   }
 
   ngAfterViewInit(): void {
@@ -89,6 +101,7 @@ export class DocumentDashboardComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
     this.dataSource.paginator = this.paginator;
     //this.paginator.lastPage = () => this.yourMethodToTrigger();
+    
   }
 
   ngOnInit(): void {
@@ -188,10 +201,10 @@ export class DocumentDashboardComponent implements OnInit, AfterViewInit {
       this.selection.clear() :
       this.dataSource.data.forEach((row: any) => this.selection.select(row));
   }
-
+  allDocs!:any[];
   getAllDocuments(){
     this.documentservice.readAllDocumentsWODoc().subscribe({
-     next:(data:any)=>{this.dataSource.data=data}
+     next:(data:any)=>{this.dataSource.data=data,this.allDocs=data}
     });   
    }
 
@@ -271,19 +284,38 @@ checkboxSelect(event: MatCheckboxChange){
   return event
 }
 
-checkboxMultipleSelect(event: MatCheckboxChange, docId: Document){
-  
-  this.isChecked = true
-  if(this.isChecked){
-    this.store.dispatch(addMultipleDocIds(docId));
+// checkboxMultipleSelect(event: MatCheckboxChange, doc: Document){
+
+//   if(event.checked){
     
-  } else{
-    event.checked = false
-    this.store.dispatch(removeMultipleDocIds(docId));
-  }
+//     this.selectMultiDocs.documentId = doc.id;
+//     this.selectMultiDocs.isChecked = true;
+//     this.store.dispatch(addMultipleDocIds(this.selectMultiDocs));
+//     this.store.select(selectedDocIds).subscribe(data => {
+//       data.map((val:any) => {
+//         if(val.documentId == doc.id){
+//           //doc.isChecked = val.isChecked
+//         }
+//       })
+//     })
+//     //console.log(doc.isChecked)
+//   } else{
+//     this.selectMultiDocs.documentId = doc.id;
+//     this.selectMultiDocs.isChecked = false;
+//     this.store.dispatch(removeMultipleDocIds(this.selectMultiDocs));
+   
+//     this.store.select(selectedDocIds).subscribe(data => {
+//       data.map((val:any) => {
+//         if(val.documentId == doc.id){
+//           //doc.isChecked = val.isChecked
+//         }
+//       })
+//     })
+//     //console.log(doc.isChecked)
+//   }
   
-  return event
-}
+//   return event
+// }
 
 
 docSelected(doc:Document){
@@ -295,7 +327,7 @@ deleteDoc(documentId:number){
   this.documentservice.deleteDocument(documentId).subscribe((data)=>{console.log(data)})
   window.location.reload()
 }
-
+ 
 openDialog2() {
   const dialogRef = this.dialog.open(EditSelectedDocComponent,{
     width:"80vw",
@@ -307,4 +339,68 @@ openDialog2() {
     data: {data: this.selectedDoc}
   });
 }
+
+openDialog3() {
+  const dialogRef = this.dialog.open(MultiDocEditingComponent,{
+    width:"80vw",
+    height:"80vh",
+    minHeight:"80vh",
+    maxHeight:"500px",
+    minWidth:"80vw",
+    maxWidth:"400px",
+    data: {data2: this.listOfDocs}
+  });
+}
+
+@HostListener('document:keydown', ['$event'])
+keydownHandler(event: KeyboardEvent): void {
+    if (event && event.ctrlKey && event.keyCode === 116) {
+        window.localStorage.clear();
+    }
+}
+
+listOfDocs:number[]=[];
+
+openMultiDocEditDialog(){
+  if(this.listOfDocs.length===0){
+    alert("No documents selected")
+  }else{
+    console.log(this.listOfDocs)
+    this.openDialog3()
+  }
+}
+allCheckboxChanged(event: MatCheckboxChange){
+  if(event.checked){
+    this.allDocs.forEach(element => {
+      if(!(this.listOfDocs.includes(element.id))){
+        this.listOfDocs.push(element.id);
+      }
+    });
+  // }else if((!event.checked) && this.selection.hasValue()){
+  //   //has to add some function
+  // 
+}else{
+    this.listOfDocs=[];
+  }
+  return event;
+}
+eachCheckboxChanged(event: MatCheckboxChange,doc:any){
+  console.log("each change triggered")
+  
+  if(event.checked){
+    if(!(this.listOfDocs.includes(doc.id))){
+      this.listOfDocs.push(doc.id);
+    }
+  }else{
+    var newList:number[]=[];
+    for(let i=0;i<this.listOfDocs.length;i++){
+      if(this.listOfDocs[i]!==doc.id){
+        newList.push(this.listOfDocs[i])
+      }
+    }
+    this.listOfDocs=newList
+  }
+  return event;
+}
+
 }

@@ -51,6 +51,7 @@ export class ReadDocumentComponent implements OnInit {
     //this.getAllCountries(); 
     this.isSelected=false;
     this.documentservice.getSelectedDocsIdList().subscribe(data =>{
+      console.log(data)
       this.multipleSelectedDocsIds = data
     })
   }

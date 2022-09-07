@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Country } from 'src/app/model/country';
 import { DocumentView } from 'src/app/model/documentView';
+import { multiDocDto } from 'src/app/model/multiDocDto';
 import { Section } from 'src/app/model/section';
 
 @Injectable({
@@ -27,6 +28,11 @@ export class DocumentService {
     return this.http.post<Document>(`${this.url}/document`, document);
   }
 
+  editMultipleDocs(multiDoDto: multiDocDto): Observable<multiDocDto>{
+    return this.http.put<multiDocDto>(`${this.url}`+'/updateSelectedDocument',multiDoDto);
+  
+  }
+
   getAllDocuments(): Observable<Document[]> {
     return this.http.get<Document[]>(`${this.url}/getAllDocuments`);
   }
@@ -49,5 +55,6 @@ export class DocumentService {
   deleteDocument(documentId:number):Observable<string>{
     return this.http.delete<string>(`${this.url}/deleteDocument/${documentId}`)
   }
+
 
 }

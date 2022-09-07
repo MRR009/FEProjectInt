@@ -1,31 +1,31 @@
 import { createReducer, on, ActionReducer, INIT, UPDATE } from '@ngrx/store';
+import { window } from 'rxjs';
 import { Document } from 'src/app/model/document';
-import { addMultipleDocIds, removeMultipleDocIds, addMultipleDocIdsList, checkboxStatus } from './document.action';
+import { MultipleDocs } from 'src/app/model/multiDocInterface';
+import { addMultipleDocIds, removeMultipleDocIds, checkboxStatus } from './document.action';
 
 export const initialDocIdsEntries: MultipleDocs[] = [];
 
-export interface MultipleDocs{
-  documentId: number;
-  isChecked: boolean;
-}
+
 
 export const docIdReducer = createReducer(
     initialDocIdsEntries,
     
 
   on(addMultipleDocIds, (entries, multidoc) => {
-    console.log(docId)
+    //console.log(entries)
     let entriesClone: MultipleDocs[] = JSON.parse(JSON.stringify(entries));
-    entriesClone.push();
-    console.log(entriesClone)
+    entriesClone.push(multidoc);
+    //console.log(entriesClone)
     entriesClone = [...new Set(entriesClone)]
     return entriesClone;
   }),
 
 
-  on(removeMultipleDocIds, (entries, docId) => {
+  on(removeMultipleDocIds, (entries, multidoc) => {
+    //console.log(multidoc)
     const entriesClone: MultipleDocs[] = JSON.parse(JSON.stringify(entries));
-    const found = entriesClone.find(e => e.documentId === docId.id)
+    const found = entriesClone.find(e => e.documentId === multidoc.documentId)
     if (found) {
       entriesClone.splice(entriesClone.indexOf(found), 1)
     }
@@ -35,16 +35,6 @@ export const docIdReducer = createReducer(
 
 )
 
-export const checkedStatus: Boolean = false;
-
-export const checkedStatusReducer = createReducer(
-  checkedStatus,
-  on(checkboxStatus,(entries, isChecked) => {
-    let checkedStatus: Boolean = entries
-    checkedStatus = !isChecked
-    return checkedStatus;
-  })
-)
 
 
 export const metaReducerLocalStorage = (reducer: ActionReducer<any>): ActionReducer<any> => {

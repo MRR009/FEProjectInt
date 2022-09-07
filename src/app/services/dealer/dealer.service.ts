@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { multiDocDto } from 'src/app/model/multiDocDto';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -14,4 +16,5 @@ export class DealerService {
   getDealers(){
     return this.http.get(`http://localhost:7070/stgit.com/autodealerauditappapi/dealer/v1/dealers`)
   }
+ 
 }

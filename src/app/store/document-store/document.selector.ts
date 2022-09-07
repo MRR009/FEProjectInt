@@ -1,29 +1,23 @@
 import { createFeatureSelector, createSelector, State } from '@ngrx/store';
 import { state } from '@angular/animations';
 import { Document } from 'src/app/model/document';
-import { create } from 'domain';
+import { MultipleDocs } from 'src/app/model/multiDocInterface';
 
 export interface DocumentGroup {
     document: Document;
-    count: number;
+    isChecked: boolean;
   }
 
 
 
 export const selectedDocIds = createSelector(
     createFeatureSelector('docIdEntries'),
-    (state: Document[]) => {
+    (state: MultipleDocs[]) => {
         console.log(state)
         return state
       }
 )
 
-// export const multipleDocuments = createSelector(
-//   createFeatureSelector('docIdEntries'),
-//   (state: MultipleDocs[]) => {
-    
-//   }
-// )
 
 
 
@@ -34,9 +28,9 @@ export const selectGroupedDocIdEntries = createSelector(
   
       state.forEach(d => {
         if (map.get(d.id)) {
-          (map.get(d.id) as DocumentGroup).count++;
+          (map.get(d.id) as DocumentGroup).isChecked = true;
         } else {
-          map.set(d.id, { document: d, count: 1 });
+          map.set(d.id, { document: d, isChecked: false });
         }
       })
   

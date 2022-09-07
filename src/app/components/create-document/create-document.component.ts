@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable, ReplaySubject } from 'rxjs';
 import { Country } from 'src/app/model/country';
 import { Section } from 'src/app/model/section';
@@ -62,30 +62,30 @@ export class CreateDocumentComponent implements OnInit {
     })
   }
 
-  documentForm=this.fb.group({
-    country:['',Validators.required],
-    section:['',Validators.required],
-    resourceType:['',Validators.required],
-    category:['',Validators.required],
-    programCode:['',Validators.required],
-    revisionDate:['',Validators.required],
-    document:['',[Validators.required]],
-    year:['',Validators.required],
-    documentStatus:['Active',Validators.required],
-    revisionStatus:['Not Reviewed',Validators.required],
-    documentTitle:['',Validators.required],
-    description:['',Validators.required],
-    user:{
+  documentForm=new FormGroup({
+    country:new FormControl('',[Validators.required]),
+    section:new FormControl('',[Validators.required]),
+    resourceType:new FormControl('',[Validators.required]),
+    category:new FormControl('',[Validators.required]),
+    programCode:new FormControl('',[Validators.required]),
+    revisionDate:new FormControl('',[Validators.required]),
+    document:new FormControl('',[Validators.required]),
+    year:new FormControl('',[Validators.required]),
+    documentStatus:new FormControl('Active',[Validators.required]),
+    revisionStatus:new FormControl('Not Reviewed',[Validators.required]),
+    documentTitle:new FormControl('',[Validators.required]),
+    description:new FormControl('',[Validators.required]),
+    user:new FormControl({
       userId:3
-    }
+    },[Validators.required]),
   })
 
   onFileChange(event: any) {
     
-    this.filename = this.documentForm.value.documentTitle + "%" + event.target.files[0].name
+    this.filename =  event.target.files[0].name
      
     this.file = event.target.files[0];
-   
+    
     this.convertFile(event.target.files[0]).subscribe(base64 => {
       this.base64Output = base64;
     });

@@ -13,5 +13,6 @@ export class Document{
     documentStatus!: boolean;
     section: string = '';
     description: string = '';
+    isChecked: boolean = false;
 
 }

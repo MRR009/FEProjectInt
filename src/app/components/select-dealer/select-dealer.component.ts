@@ -1,17 +1,25 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { CookieService } from 'ngx-cookie-service';
 import { Audit } from 'src/app/model/audit';
 import { Auditor } from 'src/app/model/auditor';
 import { Auditors } from 'src/app/model/auditors';
 import { AuditorsList } from 'src/app/model/auditors-list';
+import { PersistComponents } from 'src/app/model/persist';
+import { UserDetails } from 'src/app/model/userDetails';
 import { AuditorsService } from 'src/app/services/auditors.service';
 import { AuditserviceService } from 'src/app/services/auditservice.service';
 import { DealerService } from 'src/app/services/dealer.service';
 import { DocumentService } from 'src/app/services/document/document.service';
+import { addDealer, persistComps } from 'src/app/store/dealer-store/action';
+import { persistCompsState, selectDealer, userState } from 'src/app/store/dealer-store/selector';
 import { Dealer } from 'src/Objects';
+
 
 @Component({
   selector: 'select-dealer',
@@ -24,65 +32,80 @@ export class SelectDealerComponent implements OnInit, AfterViewInit {
   @ViewChild(MatSort) sort !: MatSort;
   @ViewChild(MatPaginator) paginator !: MatPaginator;
 
-  constructor(private documnetService:DocumentService ,private dealerService:DealerService,private fb: FormBuilder, private auditorService:AuditorsService,private auditService:AuditserviceService ) { 
-    
+  constructor(private router: Router, private cookies: CookieService, private store: Store, private documnetService: DocumentService, private dealerService: DealerService, private fb: FormBuilder, private auditorService: AuditorsService, private auditService: AuditserviceService) {
+
     this.dataSource.filterPredicate = this.createFilter();
-    
+
+    this.validateTheUser();
+
     dealerService.getDealers().subscribe({
-      next:(data:any)=>{this.dataSource.data=data, console.log(data)}
+      next: (data: any) => { this.dataSource.data = data, console.log(data) }
     })
-    
+
 
     this.auditorService.getAuditorsList().subscribe(
       {
-        next :(data:any) => {this.auditorsList=data, console.log(data)}
+        next: (data: any) => { this.auditorsList = data, console.log(data) }
       }
     )
+
+    this.store.select(persistCompsState).subscribe({
+      next: (data: PersistComponents) => {
+        this.formsPersistentValues = data,
+          console.log(data)
+      }
+    })
+
+    this.store.select(userState).subscribe({
+      next: (data: any) => this.user = data
+    })
+
   }
 
 
-  dealersList:any[]=[]
-  auditorsList : Auditor[]=[];
-  selectedAuditors:Auditor[]=[];
-  workAllocatedAuditors:AuditorsList[]=[];
-  dealer:any={}
-  showDealersList:boolean=true;
-  showDealerData:boolean=false;
-  showCreateAudit:boolean=false;
-  showAuditors:boolean=false;
-  showReviewSubmit:boolean=false;
-  totalWorkAssigned:number=0;
-  reportsLanguage:string="";
-  auditType:string="";
+  dealersList: any[] = []
+  auditorsList: Auditor[] = [];
+  selectedAuditors: Auditor[] = [];
+  workAllocatedAuditors: AuditorsList[] = [];
+  user: UserDetails = new UserDetails();
+  dealer: any = {}
+  showAuditors: boolean = false;
+  totalWorkAssigned: number = 0;
+  reportsLanguage: string = "";
+  auditType: string = "";
+  isDealerSelected: boolean = false;
+  isPlanAuditClicked: boolean = false;
+  isDashboardClicked: boolean = true;
+  formsPersistentValues: PersistComponents = new PersistComponents();
 
-  auditForm=this.fb.group({
-    auditType:[0, Validators.required],
-    comments:['', Validators.required],
-    dateAssigned:['', Validators.required],
-    noOfMonths:[0, Validators.required],
-    reason: ['', Validators.required],
-    reportsLanguage:[0, Validators.required],
+  auditForm = new FormGroup({
+    auditType: new FormControl(0, [Validators.required]),
+    comments: new FormControl('', [Validators.required]),
+    dateAssigned: new FormControl('', [Validators.required]),
+    noOfMonths: new FormControl(0, [Validators.required]),
+    reason: new FormControl('', [Validators.required]),
+    reportsLanguage: new FormControl(0, [Validators.required]),
   })
 
-  dealerInfo=this.fb.group({
-    businessCenter : ['', Validators.required],
-    dealerCode : ['', Validators.required],
-    dealerName : ['', Validators.required],
-    dba : ['', Validators.required],
-    dealerPrincipal : ['', Validators.required],
-    letterGreeting : ['', Validators.required],
-    salesGroupSize : ['', Validators.required],
-    
+  dealerInfo = this.fb.group({
+    businessCenter: ['', Validators.required],
+    dealerCode: ['', Validators.required],
+    dealerName: ['', Validators.required],
+    dba: ['', Validators.required],
+    dealerPrincipal: ['', Validators.required],
+    letterGreeting: ['', Validators.required],
+    salesGroupSize: ['', Validators.required],
+
     dealerAddress: this.fb.group({
-      addressLane1 : ['', Validators.required],
-      state : ['', Validators.required],
-      addressLane2 : ['', Validators.required],
-      country : ['', Validators.required],
-      city : ['', Validators.required],
-      zip : ['', Validators.required],
-      phone : ['', Validators.required],
-      mail : ['', Validators.required],
-  
+      addressLane1: ['', Validators.required],
+      state: ['', Validators.required],
+      addressLane2: ['', Validators.required],
+      country: ['', Validators.required],
+      city: ['', Validators.required],
+      zip: ['', Validators.required],
+      phone: ['', Validators.required],
+      mail: ['', Validators.required],
+
     })
 
   })
@@ -97,73 +120,71 @@ export class SelectDealerComponent implements OnInit, AfterViewInit {
 
   dataSource = new MatTableDataSource();
 
-  columnsToDisplay = ['dealerCode','businessCenter','dealerName', 'state', 'country']
+  columnsToDisplay = ['dealerCode', 'businessCenter', 'dealerName', 'state', 'country']
 
   filterValues = {
-    dealerCode:'',
+    dealerCode: '',
     businessCenter: '',
-    dealerName:'',
+    dealerName: '',
     state: '',
     country: ''
   }
 
   ngAfterViewInit(): void {
-    this.dataSource.sortingDataAccessor = (dealer:any, property) => {
-      switch(property) {
+    this.dataSource.sortingDataAccessor = (dealer: any, property) => {
+      switch (property) {
         case 'state': return dealer.dealerAddress.state;
         case 'country': return dealer.dealerAddress.country;
         default: return dealer[property];
       }
     };
     this.dataSource.sort = this.sort;
-   
+
     console.log(this.auditorsList)
   }
 
   ngOnInit(): void {
 
-  
-
     this.dealerCodeFilter.valueChanges
-    .subscribe(
-      dealerCode => {
-        this.filterValues.dealerCode = dealerCode;
-        this.dataSource.filter = JSON.stringify(this.filterValues);
-      }
-    )
+      .subscribe(
+        dealerCode => {
+          this.filterValues.dealerCode = dealerCode
+          this.dataSource.filter = JSON.stringify(this.filterValues);
+        }
+      )
 
     this.businessCenterFilter.valueChanges
-    .subscribe(
-      businessCenter => {
-        this.filterValues.businessCenter = businessCenter;
-        this.dataSource.filter = JSON.stringify(this.filterValues);
-      }
-    )
+      .subscribe(
+        businessCenter => {
+          this.filterValues.businessCenter = businessCenter;
+          this.dataSource.filter = JSON.stringify(this.filterValues);
+        }
+      )
 
     this.dealerNameFilter.valueChanges
-    .subscribe(
-      dealerName => {
-        this.filterValues.dealerName = dealerName;
-        this.dataSource.filter = JSON.stringify(this.filterValues);
-      }
-    )
+      .subscribe(
+        dealerName => {
+          this.filterValues.dealerName = dealerName;
+          this.dataSource.filter = JSON.stringify(this.filterValues);
+        }
+      )
 
     this.dealerStateFilter.valueChanges
-    .subscribe(
-      dealerState => {
-        this.filterValues.state = dealerState;
-        this.dataSource.filter = JSON.stringify(this.filterValues);
-      }
-    )
+      .subscribe(
+        dealerState => {
+          this.filterValues.state = dealerState;
+          this.dataSource.filter = JSON.stringify(this.filterValues);
+        }
+      )
 
     this.countryFilter.valueChanges
-    .subscribe(
-      country => {
-        this.filterValues.country = country;
-        this.dataSource.filter = JSON.stringify(this.filterValues);
-      }
-    )
-    
+      .subscribe(
+        country => {
+          this.filterValues.country = country;
+          this.dataSource.filter = JSON.stringify(this.filterValues);
+        }
+      )
+
 
   }
 
@@ -179,156 +200,186 @@ export class SelectDealerComponent implements OnInit, AfterViewInit {
         && data.dealerAddress.country.toLowerCase().indexOf(searchTerms.country.toLowerCase()) !== -1
         && data.dealerAddress.state.toLowerCase().indexOf(searchTerms.state.toLowerCase()) !== -1;
     }
-   
+
 
     return filterFunction;
   }
-  
-  selectDealer(dealerData:any){
-    this.dealer=dealerData
-    this.showDealersList=false;
-    this.showDealerData=true;
+
+  selectDealer(dealerData: any) {
+    this.store.dispatch(addDealer(dealerData))
+    this.store.select(selectDealer).subscribe({
+      next: (data: Dealer) => { this.dealer = data, this.isDealerSelected = true }
+    })
+    this.onClickOnDealersInfo()
     this.dealerInfo.patchValue(dealerData);
-    // this.dealerInfo = this.fb.group({
-    //   dealerCode : [dealerData.dealerCode, Validators.required],
-    //   businessCenter : [dealerData.businessCenter, Validators.required],
-    //   dealerName : [dealerData.dealerName, Validators.required],
-    //   dba : [dealerData.dba, Validators.required],
-    //   dealerPrincipal : [dealerData.dealerPrincipal, Validators.required],
-    //   letterGreeting : [dealerData.letterGreeting, Validators.required],
-    //   salesGroupSize : [dealerData.salesGroupSize, Validators.required],
-    //   dealerAddress : this.fb.group({
-      
-    //     addressLane1 : [dealerData.dealerAddress.addressLane1 , Validators.required],
-    //     state : [dealerData.dealerAddress.state, Validators.required],
-    //     addressLane2 : [dealerData.dealerAddress.addressLane2, Validators.required],
-    //     country : [dealerData.dealerAddress.country, Validators.required],
-    //     city : [dealerData.dealerAddress.city, Validators.required],
-    //     zip : [dealerData.dealerAddress.zip, Validators.required],
-    //     phone : [dealerData.dealerAddress.phone, Validators.required],
-    //     mail : [dealerData.dealerAddress.mail, Validators.required],
-    
-    //   })
-    // })
   }
 
-  onClickOnDealersList(){
-    this.showDealersList=true;
-    this.showDealerData=false;
-    this.showCreateAudit=false;
-    this.showReviewSubmit=false;
-    
+  dataStoringAndGettingFromStore(boolVals: PersistComponents) {
+    this.store.dispatch(persistComps(boolVals))
+    this.store.select(persistCompsState).subscribe({
+      next: (data: PersistComponents) => {
+        this.formsPersistentValues = data
+      }
+    })
   }
-  onClickOnDealersInfo(){
-    this.showDealersList=false;
-    this.showDealerData=true;
-    this.showCreateAudit=false;
-    this.showReviewSubmit=false;
+  onClickOnDealersList() {
+    let tempVals: PersistComponents = new PersistComponents()
+    tempVals.showDealersList = true;
+    tempVals.showDealerData = false;
+    tempVals.showCreateAudit = false;
+    tempVals.showReviewSubmit = false;
+    this.dataStoringAndGettingFromStore(tempVals);
   }
-  onClickOnAssignAudit(){
-    this.showDealersList=false;
-    this.showDealerData=false;
-    this.showCreateAudit=true;
-    this.showReviewSubmit=false;
-  }
-  onClickOnReviewAudit(){
-    this.showDealersList=false;
-    this.showDealerData=false;
-    this.showCreateAudit=false;
-    this.showReviewSubmit=true;
+  onClickOnDealersInfo() {
 
+    if (this.isDealerSelected) {
+      let tempVals: PersistComponents = new PersistComponents()
+      tempVals.showDealersList = false;
+      tempVals.showDealerData = true;
+      tempVals.showCreateAudit = false;
+      tempVals.showReviewSubmit = false;
+      this.dataStoringAndGettingFromStore(tempVals);
+    } else {
+      alert("Select the dealer for viewing dealer info")
+    }
   }
-  showAuditorsList(){
-    this.showAuditors=true;
+  onClickOnAssignAudit() {
+    let tempVals: PersistComponents = new PersistComponents()
+    tempVals.showDealersList = false;
+    tempVals.showDealerData = false;
+    tempVals.showCreateAudit = true;
+    tempVals.showReviewSubmit = false;
+    this.dataStoringAndGettingFromStore(tempVals);
   }
-  onSelectAuditor(auditor:Auditor){
-    const found=this.selectedAuditors.find(e=>e.auditorId==auditor.auditorId)
-    if(found){
+  onClickOnReviewAudit() {
+    let tempVals: PersistComponents = new PersistComponents()
+    tempVals.showDealersList = false;
+    tempVals.showDealerData = false;
+    tempVals.showCreateAudit = false;
+    tempVals.showReviewSubmit = true;
+    this.dataStoringAndGettingFromStore(tempVals);
+  }
+  showAuditorsList() {
+    this.showAuditors = true;
+  }
+  onSelectAuditor(auditor: Auditor) {
+    const found = this.selectedAuditors.find(e => e.auditorId == auditor.auditorId)
+    if (found) {
       alert("Already auditor assigned for this audit")
-    }else{
+    } else {
       this.selectedAuditors.push(auditor)
-      this.showAuditors=false;
+      this.showAuditors = false;
     }
-    
+
   }
 
-  onAssigningWork(e:any, allocatedAuditor:any){
-    let workAllocation:number=parseInt(e.target.value)
-    if(this.totalWorkAssigned + workAllocation >100){
+  onAssigningWork(e: any, allocatedAuditor: any) {
+    let workAllocation: number = parseInt(e.target.value)
+    if (this.totalWorkAssigned + workAllocation > 100) {
       alert("Work allocation exceeded 100%")
-    }else{
-      this.totalWorkAssigned=this.totalWorkAssigned+workAllocation;
-      this.workAllocatedAuditors.push(new AuditorsList(0,allocatedAuditor.auditorId,workAllocation))
+    } else {
+      this.totalWorkAssigned = this.totalWorkAssigned + workAllocation;
+      this.workAllocatedAuditors.push(new AuditorsList(0, allocatedAuditor.auditorId, workAllocation))
     }
-    
+
   }
 
-  onSelectOfAuditType(e:any){
-    let value= parseInt(e.target.value)
+  onSelectOfAuditType(e: any) {
+    let value = parseInt(e.target.value)
     switch (value) {
       case 0:
-        return this.auditType="RSA"
+        return this.auditType = "RSA"
       case 1:
-        return this.auditType="SALES"
+        return this.auditType = "SALES"
       case 2:
-        return this.auditType="WARRANTY"
+        return this.auditType = "WARRANTY"
       default:
-        return this.auditType=""
+        return this.auditType = ""
     }
   }
 
-  onSelectOfReportsLanguage(e:any){
-    let value= parseInt(e.target.value)
+  onSelectOfReportsLanguage(e: any) {
+    let value = parseInt(e.target.value)
     switch (value) {
       case 0:
-        return this.reportsLanguage="English"
+        return this.reportsLanguage = "English"
       case 1:
-        return this.reportsLanguage="Spanish"
+        return this.reportsLanguage = "Spanish"
       case 2:
-        return this.reportsLanguage="French"
+        return this.reportsLanguage = "French"
       default:
-        return this.reportsLanguage=""
+        return this.reportsLanguage = ""
     }
   }
 
-  onSearchOfAuditors(e:any){
-  
+  onClickOnCreateAudit() {
+    if (this.user.role == "Manager" || this.user.role == "Admin") {
+      this.isPlanAuditClicked = true;
+      this.isDashboardClicked = false;
+    } else {
+      alert("You are not having access to create Audit")
+    }
   }
 
-  onClickOnBack(){
+  onClickOnDashBoard() {
+    this.isDashboardClicked = true;
+    this.isPlanAuditClicked = false;
+  }
+
+  validateTheUser() {
+    if (this.user.role == "Manager" || this.user.role == "Admin") {
+      this.isPlanAuditClicked = true;
+      this.isDashboardClicked = false;
+    } else {
+      this.isPlanAuditClicked = false;
+      this.isDashboardClicked = true;
+    }
+  }
+  onSearchOfAuditors(e: any) {
+
+  }
+
+  onClickOnBack() {
     this.onClickOnDealersList();
   }
-  onClickOnNext(){
+  onClickOnNext() {
     this.onClickOnAssignAudit();
   }
-  onClickOnCancel(){
+  onClickOnCancel() {
     this.onClickOnDealersList();
-    this.dealer={};
-    this.selectedAuditors=[]
+    this.dealer = {};
+    this.selectedAuditors = []
     window.location.reload();
   }
-  onClickOnBack1(){
+  onClickOnBack1() {
     this.onClickOnDealersInfo();
   }
-  onClickOnNext1(){
+  onClickOnNext1() {
     this.onClickOnReviewAudit();
   }
-  onClickOnBack2(){
+  onClickOnBack2() {
     this.onClickOnAssignAudit();
   }
-  onClickOnSubmit(){
-    if(this.workAllocatedAuditors.length==0){
+
+  onLogout(){
+    this.router.navigate(['/login']);
+    this.cookies.delete('jwt_token')
+    window.localStorage.clear();
+    window.location.reload();
+  }
+  onClickOnSubmit() {
+    if (this.workAllocatedAuditors.length == 0) {
       alert("Audit cannot be created without auditors")
-    }else{
-      const audit = new Audit(0,this.dealer.dealerId,parseInt(this.auditForm.value.auditType),this.auditForm.value.comments,this.auditForm.value.dateAssigned,parseInt(this.auditForm.value.noOfMonths),this.auditForm.value.reason,this.auditForm.value.reportsLanguage,this.workAllocatedAuditors)
+    } else {
+      const audit = new Audit(0, this.dealer.dealerId, parseInt(this.auditForm.value.auditType), this.auditForm.value.comments, this.auditForm.value.dateAssigned, parseInt(this.auditForm.value.noOfMonths), this.auditForm.value.reason, this.auditForm.value.reportsLanguage, this.workAllocatedAuditors)
       this.auditService.createAudit(audit).subscribe({
-        next:(data:any)=>{
+        next: (data: any) => {
           console.log(data)
           alert("Audit created  successfully")
         }
       })
     }
-    
+
   }
 
 }

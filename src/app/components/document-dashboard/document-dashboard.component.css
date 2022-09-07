@@ -47,8 +47,8 @@ td.mat-cell {
 }
 
 ::ng-deep .document-cell-width {
-  min-width: 100px;
-  max-width: 150px;
+  min-width: 10px;
+  max-width: 120px;
   overflow-x: hidden;
 
 }
@@ -59,7 +59,8 @@ td.mat-cell {
 }
 
 ::ng-deep .task-column-header {
-  min-height: 100px;
+  min-height: 70px;
+  width: 70px;
 }
 
 ::ng-deep .task-column {
@@ -67,6 +68,7 @@ td.mat-cell {
   display: flex;
   align-content: center;
   justify-content: center;
+  width: 70px;
 }
 
 ::ng-deep .select-cell-width {
@@ -84,6 +86,7 @@ td.mat-cell {
   color: #1f1d1d;
   text-align: center;
   background-color: #ffffff;
+  height: 20px;
 }
 
 ::ng-deep .mat-checkbox-inner-container {
@@ -117,6 +120,7 @@ td.mat-cell {
 
 .example-container {
   height: 100vh;
+  background-color: #ffffff;
 }
 
 
@@ -135,11 +139,14 @@ td.mat-cell {
   cursor: pointer;
 }
 
-.btn{
-  background-color: #24a0ed;
-  border-color: #24a0ed;
-  color: #ffffff;
+.add-newbutton{
+  background-color: #24a0ed !important;
+  border: none;
 }
+.add-newbutton:hover{
+  background-color: #105e8f !important;
+}
+
 
 .btnn {
   border: none;
@@ -155,5 +162,24 @@ td.mat-cell {
   padding: 20px;
   display: flex;
   flex-direction: row;
-  justify-content: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  height: 75px;
+}
+.top-butons-2{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+.title{
+  font-family: sans-serif;
+  font-size: 25px;
+  font-weight: 600;
+  color: #535353;
+}
+.title-span{
+  font-family: sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  color: #000000;
 }
